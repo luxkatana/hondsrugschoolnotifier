@@ -1,5 +1,5 @@
 {
   "builds": [
-    {"src": "./main.py", "use": "@now/python"}
+    {"src": "./main.py", "use": "@vercel/python"}
   ]
 }
