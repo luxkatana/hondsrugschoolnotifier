@@ -2,7 +2,7 @@ from fastapi import FastAPI, Response
 import uvicorn
 import schedule
 import somtodaypython.nonasyncsomtoday as somtodaypython
-# ok
+# o
 from threading import Thread
 def main() -> None:
     while True:
