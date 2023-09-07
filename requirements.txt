@@ -1,4 +1,4 @@
 fastAPI
-git+https://github.com/luxkatana/somtodayapi_python@dev
+git+https://github.com/luxkatana/somtodayapi_python
 uvicorn
 schedule
