@@ -3,3 +3,5 @@ git+https://github.com/luxkatana/somtodayapi_python
 uvicorn
 pytz
 requests
+flask
+waitress

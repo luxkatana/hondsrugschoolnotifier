@@ -1,16 +1,23 @@
-from fastapi import FastAPI, Response
-from json import dumps
 import logging
 import pytz
+from json import dumps
 from datetime import datetime, timedelta 
 import requests
-import uvicorn
+from waitress import serve
 import somtodaypython.nonasyncsomtoday as somtoday
 from time import sleep as wait
 from threading import Thread
+from flask import Flask, render_template
 logging.basicConfig(filename="main_server_log.log", filemode='a', level=logging.ERROR,
                     format="%(asctime)s: %(message)s")
-CEST = pytz.FixedOffset(120)
+app = Flask(__name__)
+with open('./main_server_log.log', 'w') as file:
+    file.truncate()
+
+CEST = pytz.FixedOffset(60)
+print("CEST => {}".format(datetime.now(CEST)))
+print("NORMAL DEFAULT => {}".format(datetime.now()))
+
 school = somtoday.find_school("Hondsrug College")
 
 def get_nearest_time(subjects: list[somtoday.Subject],
@@ -60,20 +67,16 @@ def main() -> None:
             logging.error(f"Condition was not correct {nearest_subject_now}\t {now}")
         wait(60)
 
+@app.get('/')
+def index():
+    student = school.get_student('133600', 'inchem2009')
+    now = datetime.now(CEST)
+    schedule = student.fetch_schedule(now, now + timedelta(days=1))
+    nearest_time = get_nearest_time(schedule)
+    if nearest_time != ():
+        return render_template('index.html', status='les')
+    return render_template('index.html', status='vrij')
 
-app = FastAPI()
-
-
-@app.get('/heartbeat/')
-async def heartbeat():
-    return Response("{\"response\": true}", media_type='application/json')
-
-if __name__ ==  "__main__":
-    Thread(target=main, daemon=True).start()
-    print("Server on 0.0.0.0:40623 is on!")
-    uvicorn.run(app, host="0.0.0.0", port=40263, log_level=logging.ERROR)
-    # uvicorn.run(app, host="127.0.0.1", port=8000, log_level=logging.ERROR)
-    '''
-    127.0.0.1:8000 -> test-server
-    0.0.0.0 -> 40263 development-server (production)
-    '''
+if __name__ == '__main__':
+    Thread(target=main).start()
+    
