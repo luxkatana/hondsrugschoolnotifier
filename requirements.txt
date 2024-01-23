@@ -1,7 +1,4 @@
-fastAPI
-git+https://github.com/luxkatana/somtodayapi_python
-uvicorn
 pytz
 requests
-flask
-waitress
+python-dotenv
+git+https://github.com/luxkatana/somtodayapi_python@dev
