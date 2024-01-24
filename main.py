@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import pytz
 import requests
 import nonasyncsomtoday as somtoday
