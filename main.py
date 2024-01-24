@@ -14,13 +14,13 @@ from os import getenv
 # ------------ CONFIGURATIONS ------------
 
 load_dotenv()
-SCHOOL_NAME = getenv("SCHOOL_NAME")
 STUDENT_NAME = getenv("STUDENT_NAME")
 STUDENT_PASSWORD = getenv("STUDENT_PASSWORD")
-if None in [SCHOOL_NAME, STUDENT_NAME, STUDENT_PASSWORD]:
+NTFY_TOPIC_NAME = getenv("NTFY_TOPIC_NAME")
+if None in [STUDENT_NAME, STUDENT_PASSWORD, NTFY_TOPIC_NAME]:
     stderr.write("Required environment variables are missing.\n")
     stderr.write("The following environment variables are required:\n")
-    stderr.write("> SCHOOL_NAME\n> STUDENT_NAME\n> STUDENT_PASSWORD")
+    stderr.write("STUDENT_NAME\n> STUDENT_PASSWORD\n>NTFY_TOPIC_NAME\n")
     stderr.flush()
     exit(1)
 # ------------ CONFIGURATIONS ------------
@@ -36,13 +36,8 @@ class Extra(NamedTuple):
     to_notify_before_min: int
 
 CET = pytz.FixedOffset(60)
-try:
-    school = somtoday.find_school("Hondsrug College")
-except ValueError:
-    stderr.write("SCHOOL_NAME is incorrect or perhaps it's not registered in the somtoday server.")
-    stderr.flush()
-    exit(1)
-
+NTFY_ENDPOINT: str = f'https://ntfy.sh'
+school = somtoday.find_school("Hondsrug College")
 weekends = {5, 6} # saturday and sunday (index offset by 1)
 extras: tuple[Extra, ...] = (
     Extra(starting_hour=11, starting_minute=30, ending_hour=11, ending_minute=45, description='van 11:30 tot 11:45', title='Korte pauze begint over 10 minuten!', to_notify_before_min=10),
@@ -107,7 +102,7 @@ def main() -> None:
             (now.hour < 8) => check if the time is before 8:00 AM (no lessons at my school)
             (now.hour >= 16) => check if the time is later than 4:00 PM (class finished)
             '''
-            log('ERROR', 'CYCLE SKIPPED')
+            log('INFO', 'CYCLE SKIPPED')
             continue
             
         rooster: list[somtoday.Subject] = student\
@@ -136,10 +131,10 @@ def main() -> None:
             vak = nearest_subject_now[0]
             if isinstance(vak, Extra):
                 vak: Extra
-                response = requests.post("https://ntfy.sh",
+                response = requests.post(NTFY_ENDPOINT,
                                          data=dumps(
                                              {
-                                                 'topic': 'luxkatanaschool133600',
+                                                 'topic': NTFY_TOPIC_NAME,
                                                  'title': vak.title,
                                                  'message': vak.description,
                                                  'priority': 4
@@ -151,9 +146,9 @@ def main() -> None:
                     log('ERROR', f'Response returned status code {response.status_code} with error: {response.text}')
                 
             else:
-                response = requests.post("https://ntfy.sh/",
+                response = requests.post(NTFY_ENDPOINT,
                         data=dumps({
-                            'topic': 'luxkatanaschool133600',
+                            'topic': NTFY_TOPIC_NAME,
                             'title':  f'{vak.subject_name} ({vak.begin_hour}{"ste" if vak.begin_hour in [1, 8] else "de"} uur) gaat zo over 10 minuten beginnen!',
                             'message': f'begint om {vak.begin_time.strftime("%H:%M")} lokaal {vak.location}',
                             "priority": 4,
