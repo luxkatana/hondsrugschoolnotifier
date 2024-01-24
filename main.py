@@ -100,8 +100,7 @@ def fill_rooster_extras(rooster: list[somtoday.Subject]) -> list[somtoday.Subjec
 def main() -> None:
     while True:
         student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
-        # NOTE: now = datetime.now(CEST)
-        now = datetime(year=2024, month=1, day=23, hour=13, minute=5, tzinfo=CET)
+        now = datetime.now(CET)
         if (now.weekday() in weekends) or (now.hour < 8) or (now.hour >= 16):
             '''
             (now.weekday() in weekends) => check if now is saturday or sunday
