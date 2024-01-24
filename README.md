@@ -2,7 +2,7 @@
 
 ## Wat doet deze magie??
 
-Deze magie kan de user een berichtje sturen voor elke 10 minuten van een les.
+Deze magie kan de leerling een berichtje sturen voor elke 10 minuten van een les.
 
 ## Installatie
 
@@ -16,9 +16,9 @@ python -m pip install -r requirements.txt
 
 ## Configuratie
 
-Momenteel is het alleen mogelijk om de leerling's leerlingnummer en leerling's wachtwoord te zetten. Deze credentials worden gebruikt om de rooster van de user te verzamelen via somtoday.
+Momenteel is het alleen mogelijk om de leerling's leerlingnummer en leerling's wachtwoord te zetten. Deze credentials worden gebruikt om de rooster van de leerling te verzamelen via somtoday.
 
-om de user's leerlingnummer & wachtwoord te configureren
+om de leerling's leerlingnummer & wachtwoord te configureren
 
 ```
 LEERLING_LEERLINGNUMMER=""
@@ -39,8 +39,15 @@ NTFY_TOPIC_NAME="" #
 echo "NTFY_TOPIC_NAME=$NTFY_TOPIC_NAME\n" >> .env
 ```
 
-En tot slot.. Run je de notifier!
+En tot slot run je de notifier!
 ```
 python main.py
 ```
 
+
+## Extra's
+
+Paar extra features waar ik het meeste tijd heb aan besteed 
+<ul> 
+<li>Extra activiteiten toevoegen met een custom bericht</li>
+</ul>
