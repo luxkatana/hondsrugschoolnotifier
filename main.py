@@ -1,8 +1,8 @@
 import pytz
-from json import dumps
-from datetime import datetime, timedelta 
 import requests
 import nonasyncsomtoday as somtoday
+from datetime import datetime, timedelta 
+from json import dumps
 from typing import NamedTuple
 from time import sleep as wait
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ class Extra(NamedTuple):
     to_notify_before_min: int
 
 CET = pytz.FixedOffset(60)
-NTFY_ENDPOINT: str = f'https://ntfy.sh'
+NTFY_ENDPOINT: str = 'https://ntfy.sh'
 school = somtoday.find_school("Hondsrug College")
 weekends = {5, 6} # saturday and sunday (index offset by 1)
 extras: tuple[Extra, ...] = (
@@ -94,17 +94,37 @@ def fill_rooster_extras(rooster: list[somtoday.Subject]) -> list[somtoday.Subjec
     
 def main() -> None:
     while True:
-        student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
         now = datetime.now(CET)
-        if (now.weekday() in weekends) or (now.hour < 8) or (now.hour >= 16):
-            '''
-            (now.weekday() in weekends) => check if now is saturday or sunday
-            (now.hour < 8) => check if the time is before 8:00 AM (no lessons at my school)
-            (now.hour >= 16) => check if the time is later than 4:00 PM (class finished)
-            '''
-            log('INFO', 'CYCLE SKIPPED')
+        if now.weekday() in weekends:
+            upcoming_monday = (now + timedelta(days=7 - now.weekday())).replace(hour=8, minute=0)
+            log('INFO', f'Pausing(it\'s weekend, no school) so I\'ll sleep until {upcoming_monday.strftime("%d/%m/%Y %H:%M")}')
+            wait((upcoming_monday - now).total_seconds())
+            log('INFO', 'hey I\'m back!')
             continue
+
+        if now.hour < 8:
+            log('INFO', f'Pausing(theres are no classes before 8:00 AM) so I\'ll sleep until {now.replace(hour=8, minute=0).strftime("%d/%m/%Y %H:%M")}')
+            duration_to_wait = (now.replace(hour=8, minute=0) - now).total_seconds() 
+            wait(duration_to_wait)
+            log('INFO', 'hey I\'m back!')
+            continue
+        if now.hour >= 16:
+            sleeping_until = now.replace(hour=8, minute=0) + timedelta(days=1)
+            duration = (sleeping_until - now).total_seconds()
+            log('INFO', f'Classes are over for today, I\'ll sleep until {sleeping_until.strftime("%d/%m/%Y %H:%M")}')
+            wait(duration)
+            log('INFO', 'hey I\'m back!')
+            continue
+        # if (now.weekday() in weekends) or (now.hour < 8) or (now.hour >= 16):
+        #     '''
+        #     (now.weekday() in weekends) => check if now is saturday or sunday
+        #     (now.hour < 8) => check if the time is before 8:00 AM (no lessons at my school)
+        #     (now.hour >= 16) => check if the time is later than 4:00 PM (class finished)
+        #     '''
+        #     log('INFO', 'CYCLE SKIPPED')
+        #     continue
             
+        student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
         rooster: list[somtoday.Subject] = student\
             .fetch_schedule(now, now + timedelta(days=1))
         # rooster: [Subject, Subject, ...]
@@ -159,6 +179,8 @@ def main() -> None:
                     log('INFO', "Message has been successfully sent")
                 else:
                     log('ERROR', f"Response returned status code {response.status_code} with error: {response.text}")
+        else:
+            log('INFO', 'YAAY! No classes :D!')
             
         wait(60)
 
