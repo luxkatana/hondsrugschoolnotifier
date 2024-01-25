@@ -4,7 +4,7 @@ import requests
 import nonasyncsomtoday as somtoday
 from datetime import datetime, timedelta 
 from json import dumps
-from typing import NamedTuple
+from typing import NamedTuple, Union
 from time import sleep as wait
 from dotenv import load_dotenv
 from sys import stderr
@@ -13,6 +13,7 @@ from os import getenv
 
 
 # ------------ CONFIGURATIONS ------------
+
 
 load_dotenv()
 STUDENT_NAME = getenv("STUDENT_NAME")
@@ -58,7 +59,7 @@ def log(level: str='INFO', message: str='', *args, **kwargs):
 
 def get_nearest_time(subjects: list[somtoday.Subject],
                      now:  datetime) -> tuple[somtoday.Subject]:
-    def check(subject:  somtoday.Subject | Extra) -> bool:
+    def check(subject:  Union[somtoday.Subject, Extra]) -> bool:
         if isinstance(subject, Extra):
             extra_dt = datetime(year=now.year, month=now.month, day=now.day, hour=subject.starting_hour, minute=subject.starting_minute, tzinfo=CET)
             return (
