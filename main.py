@@ -158,7 +158,8 @@ def main() -> None:
                                                  'topic': NTFY_TOPIC_NAME,
                                                  'title': vak.title,
                                                  'message': vak.description,
-                                                 'priority': 4
+                                                 'priority': 4,
+                                                 'icon': 'https://play-lh.googleusercontent.com/EjGVjryW47wRq_m2K6N4eJ0BLpIWt3y5bdHKakeb7uQxZZQDP9ZeCoqeeAG_V42RkA=w240-h480'
                                              }
                                          ))
                 if response.status_code == 200:
@@ -167,12 +168,14 @@ def main() -> None:
                     log('ERROR', f'Response returned status code {response.status_code} with error: {response.text}')
                 
             else:
+                vak: somtoday.Subject
                 response = requests.post(NTFY_ENDPOINT,
                         data=dumps({
                             'topic': NTFY_TOPIC_NAME,
                             'title':  f'{vak.subject_name} ({vak.begin_hour}{"ste" if vak.begin_hour in [1, 8] else "de"} uur) gaat zo over 10 minuten beginnen!',
                             'message': f'begint om {vak.begin_time.strftime("%H:%M")} lokaal {vak.location}',
                             "priority": 4,
+                            'icon': 'https://play-lh.googleusercontent.com/EjGVjryW47wRq_m2K6N4eJ0BLpIWt3y5bdHKakeb7uQxZZQDP9ZeCoqeeAG_V42RkA=w240-h480'
                         }
                             ),
                             )
