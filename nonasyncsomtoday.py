@@ -94,6 +94,11 @@ class Subject:
         self.location: str = kwargs.get("location")
         self.teacher_short: str = kwargs.get("teacher_shortcut")
     
+    def __repr__(self) -> str:
+        return f'Subject(subject_name={self.subject_name})'
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
 class Student:
@@ -271,10 +276,10 @@ class Student:
                 self.school_subjects = [groups.get(x) for x in groups]
             return self.school_subjects
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.full_name}, {self.school_name}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
     def load_more_data(self) -> bool:
