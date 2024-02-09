@@ -65,50 +65,6 @@ def log(level: str='INFO', message: str='', *args, **kwargs):
     now = datetime.now()
     print(f'{level.upper()} - {now.strftime("%d/%m/%y, %H:%M")}  \t{message}', *args, **kwargs)
 
-def refresh_student(student: somtoday.Student) -> somtoday.Student:
-    """Refreshes a student
-    Args:
-        student (somtoday.Student): The student that needs (maybe) to be refreshed
-    Raises:
-        HTTPError: Attempt to refreshing the access token went wrong
-
-    Returns:
-        somtoday.Student: A new student with a new access_token & refresh_token
-    """    
-    headers = {
-        'Range': 'items=1-2',
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {student.access_token}'
-    }
-
-    response = requests.get(f'https://api.somtoday.nl/rest/v1/resultaten/huidigVoorLeerling/{student.indentifier}', headers=headers)
-    if response.status_code == 401:
-        # We have to refresh
-
-        body = {
-            'grant_type': 'refresh_token',
-            'refresh_token': student.refresh_token,
-            'client_id': 'D50E0C06-32D1-4B41-A137-A9A850C892C2',
-            'scope': 'openid'
-        }
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        }
-        response = requests.post(f'{student.endpoint}/oauth2/token', data=dumps(body), headers=headers)
-        if response.status_code == 200:
-            json_response = response.json()
-            return somtoday.Student(
-                name=student.name,
-                password=student.password,
-                uuid=student.school_uuid,
-                literal_school=student.school_name,
-                auth_code=student.auth_code,
-                access=json_response['access_token'],
-                refresh=json_response['refresh_token']
-            )
-        else:
-            raise requests.HTTPError(response=response)
 
 def get_nearest_time(subjects: list[somtoday.Subject],
                      now:  datetime) -> tuple[somtoday.Subject, ...]:
@@ -244,14 +200,6 @@ def main() -> None:
         #     log('INFO', 'CYCLE SKIPPED')
         #     continue
             
-        try:
-            return_val = refresh_student(student)
-        except requests.HTTPError as e:
-            log('ERROR', f"Error while attempting to refresh student ({e})")
-            continue
-        if isinstance(return_val, somtoday.Student):
-            log('INFO', 'successfully refreshed student :D')
-            student = return_val 
         
         rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
         # rooster: [Subject, Subject, ...]
