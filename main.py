@@ -119,15 +119,19 @@ def find_differences(before: list[Union[somtoday.Subject, Extra]], after: list[U
         after_vak: somtoday.Subject
         if before_vak.subject_name != after_vak.subject_name and after_vak.subject_name == 'Unknown':
             payload['reason'] = DiffResult.CLASS_DISMISSED
+            log("DEBUG", "Class dismissed")
             diff.append(payload)
         elif before_vak.teacher_short != after_vak.teacher_short:
+            log("DEBUG", "Teacher changed")
             payload['reason'] = DiffResult.TEACHER_CHANGED
             diff.append(payload)
         elif before_vak.subject_name != after_vak.subject_name and before_vak.subject_name == 'Unknown':
+            log("DEBUG", "Class added")
             payload['reason'] = DiffResult.CLASS_ADDED
             diff.append(payload)
         elif before_vak.subject_name != after_vak.subject_name and 'Unknown' not in [before_vak.subject_name, after_vak.subject_name]:
             payload['reason'] = DiffResult.NAME_CHANGED
+            log("DEBUG", "Name changed")
             diff.append(payload)
 
                 
@@ -154,6 +158,7 @@ def handle_rooster_changes(diff: list[dict[str]]):
         elif reason == DiffResult.NAME_CHANGED:
             changes_request_payload['title'] += f'Het {ste_of_de(after_vak.begin_hour)} uur is veranderd naar {after_vak.subject_name}'
             changes_request_payload['message'] = f"Eerder was het {before_vak.subject_name}"
+        log("DEBUG-161", str(changes_request_payload))
 
         response = requests.post(NTFY_ENDPOINT, data=dumps(changes_request_payload))
         if response.status_code == 200:
@@ -201,7 +206,11 @@ def main() -> None:
         #     continue
             
         
-        rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
+        try:
+            rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
+        except:
+            main()
+        
         # rooster: [Subject, Subject, ...]
 
         # 今天 = { 
