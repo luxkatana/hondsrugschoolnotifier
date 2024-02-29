@@ -23,7 +23,7 @@ NTFY_TOPIC_NAME = getenv("NTFY_TOPIC_NAME")
 if None in [STUDENT_NAME, STUDENT_PASSWORD, NTFY_TOPIC_NAME]:
     stderr.write("Required environment variables are missing.\n")
     stderr.write("The following environment variables are required:\n")
-    stderr.write("STUDENT_NAME\n> STUDENT_PASSWORD\n>NTFY_TOPIC_NAME\n")
+    stderr.write(">STUDENT_NAME\n> STUDENT_PASSWORD\n>NTFY_TOPIC_NAME\n")
     stderr.flush()
     exit(1)
 # ------------ CONFIGURATIONS ------------
@@ -269,7 +269,7 @@ def main() -> None:
                         data=dumps({
                             'topic': NTFY_TOPIC_NAME,
                             'title':  f'{vak.subject_name} ({ste_of_de(vak.begin_hour)} uur) gaat zo over 10 minuten beginnen!',
-                            'message': f'begint om {vak.begin_time.strftime("%H:%M")} lokaal {vak.location}',
+                            'message': f'begint om {vak.begin_time.strftime("%H:%M")} lokaal: {vak.location} docent: {vak.teacher_short}',
                             "priority": 4,
                             'icon': 'https://play-lh.googleusercontent.com/EjGVjryW47wRq_m2K6N4eJ0BLpIWt3y5bdHKakeb7uQxZZQDP9ZeCoqeeAG_V42RkA=w240-h480'
                         }
