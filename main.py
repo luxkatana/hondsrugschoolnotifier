@@ -17,8 +17,8 @@ from os import getenv
 
 
 load_dotenv()
-STUDENT_NAME = getenv("STUDENT_NAME")
-STUDENT_PASSWORD = getenv("STUDENT_PASSWORD")
+STUDENT_NAME = getenv("LEERLING_LEERLINGNUMMER")
+STUDENT_PASSWORD = getenv("LEERLING_WACHTWOORD")
 NTFY_TOPIC_NAME = getenv("NTFY_TOPIC_NAME")
 if None in [STUDENT_NAME, STUDENT_PASSWORD, NTFY_TOPIC_NAME]:
     stderr.write("Required environment variables are missing.\n")
