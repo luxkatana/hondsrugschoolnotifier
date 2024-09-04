@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+from threading import Thread
+from socket import socket
 import pytz
 import requests
 import somtodaypython.nonasyncsomtoday as somtoday
@@ -12,6 +14,15 @@ from sys import stderr
 from os import getenv
 
 
+def webserver() -> None:
+    log(message='Webserver daemon has started on 0.0.0.0:8000')
+    server = socket()
+    server.bind(('0.0.0.0', 8000))
+    server.listen(5)
+    while True:
+        client, _ = server.accept()
+        client.close()
+    
 
 # ------------ CONFIGURATIONS ------------
 
@@ -176,7 +187,7 @@ def main() -> None:
     global buffer_current_rooster
     while True:
         student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
-        
+
         now = datetime.now(CET)
         if now.weekday() in weekends:
             upcoming_monday = (now + timedelta(days=7 - now.weekday())).replace(hour=8, minute=0)
@@ -296,7 +307,9 @@ def main() -> None:
         wait(60)
 
 if __name__ == '__main__':
+    Thread(target=webserver, daemon=True).start()
     log('INFO', "Notifier started")
+
     try:
         main() # starting the loop 
     except KeyboardInterrupt: ...
