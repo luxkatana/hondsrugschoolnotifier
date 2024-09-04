@@ -51,3 +51,6 @@ Paar extra features waar ik het meeste tijd heb aan besteed
 <ul> 
 <li>Extra activiteiten toevoegen met een custom bericht</li>
 </ul>
+
+### Extra informatie (niet echt belangrijk ig)
+Ik gebruik meestal <a href='https://www.koyeb.com/'>koyeb</a> om dit te hosten

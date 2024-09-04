@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import pytz
 import requests
-import nonasyncsomtoday as somtoday
+import somtodaypython.nonasyncsomtoday as somtoday
 from datetime import datetime, timedelta 
 from enum import Enum
 from json import dumps
@@ -23,7 +23,7 @@ NTFY_TOPIC_NAME = getenv("NTFY_TOPIC_NAME")
 if None in [STUDENT_NAME, STUDENT_PASSWORD, NTFY_TOPIC_NAME]:
     stderr.write("Required environment variables are missing.\n")
     stderr.write("The following environment variables are required:\n")
-    stderr.write(">STUDENT_NAME\n> STUDENT_PASSWORD\n>NTFY_TOPIC_NAME\n")
+    stderr.write(">STUDENT_NAME\n>STUDENT_PASSWORD\n>NTFY_TOPIC_NAME\n")
     stderr.flush()
     exit(1)
 # ------------ CONFIGURATIONS ------------
@@ -43,17 +43,18 @@ class DiffResult(Enum):
     CLASS_DISMISSED = 1
     TEACHER_CHANGED = 2
     CLASS_ADDED = 3
-CET = pytz.FixedOffset(60)
+CET = pytz.timezone("Europe/Amsterdam")
+# CET = pytz.FixedOffset(60)
 NTFY_ENDPOINT: str = 'https://ntfy.sh'
 school = somtoday.find_school("Hondsrug College")
 buffer_current_rooster: list[somtoday.Subject] = []
 ste_of_de = lambda n: f"{n}ste" if n in (1, 8) else f'{n}de' # noqa
 weekends = {5, 6} # saturday and sunday (index offset by 1)
 extras: tuple[Extra, ...] = (
-    Extra(starting_hour=11, starting_minute=30, ending_hour=11, ending_minute=45, description='van 11:30 tot 11:45', title='Korte pauze begint over 10 minuten!', to_notify_before_min=10),
-    # 11:30 - 11:45 korte pauze (extra)
-    Extra(starting_hour=13, starting_minute=15, ending_hour=13, ending_minute=45, description='van 13:15 tot 13:45', title='Lange pauze begint over 10 minuten!', to_notify_before_min=10)
-    # 13:15 - 13:45 lange pauze (extra)
+    Extra(starting_hour=11, starting_minute=5, ending_hour=11, ending_minute=20, description='van 11:05 tot 11:20', title='Korte pauze begint over 10 minuten!', to_notify_before_min=10),
+    # 11:05 - 11:20 korte pauze (extra)
+    Extra(starting_hour=13, starting_minute=0, ending_hour=13, ending_minute=30, description='van 13:00 tot 13:30', title='Lange pauze begint over 10 minuten!', to_notify_before_min=10)
+    # 13:00 - 13:30 lange pauze (extra)
 )
 # ------------ CONSTANTS ------------
 
@@ -76,6 +77,7 @@ def get_nearest_time(subjects: list[somtoday.Subject],
                 (offset_time := (extra_dt - timedelta(minutes=subject.to_notify_before_min))).hour == now.hour and
                 offset_time.minute == now.minute
             )
+        subject.begin_time = subject.begin_time.replace(tzinfo=CET)
         return (
             subject.begin_time > now and
             (offsetby10 := (subject.begin_time - timedelta(minutes=10))).hour == now.hour 
@@ -169,12 +171,12 @@ def handle_rooster_changes(diff: list[dict[str]]):
             
             
 # ------------ HELPER FUNCTIONS ------------
-
     
 def main() -> None:
     global buffer_current_rooster
-    student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
     while True:
+        student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
+        
         now = datetime.now(CET)
         if now.weekday() in weekends:
             upcoming_monday = (now + timedelta(days=7 - now.weekday())).replace(hour=8, minute=0)
@@ -184,7 +186,7 @@ def main() -> None:
             continue
 
         if now.hour < 8:
-            log('INFO', f'Pausing(theres are no classes before 8:00 AM) so I\'ll sleep until {now.replace(hour=8, minute=0).strftime("%d/%m/%Y %H:%M")}')
+            log('INFO', f'Pausing (theres are no classes before 8:00 AM) so I\'ll sleep until {now.replace(hour=8, minute=0).strftime("%d/%m/%Y %H:%M")}')
             duration_to_wait = (now.replace(hour=8, minute=0) - now).total_seconds() 
             wait(duration_to_wait)
             log('INFO', 'hey I\'m back!')
@@ -208,7 +210,7 @@ def main() -> None:
         
         try:
             rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
-        except:
+        except Exception:
             main()
         
         # rooster: [Subject, Subject, ...]
@@ -247,8 +249,8 @@ def main() -> None:
         #     else:
         #         i: Extra
         #         print(f'{i} \t {i.starting_hour}:{i.starting_minute} -> {i.ending_hour}:{i.ending_minute}')
-        diff = find_differences(buffer_current_rooster, filled)
-        handle_rooster_changes(diff)
+        # diff = find_differences(buffer_current_rooster, filled)
+        # handle_rooster_changes(diff)
 
         if nearest_subject_now != ():
             vak = nearest_subject_now[0]
