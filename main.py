@@ -172,7 +172,6 @@ def handle_rooster_changes(diff: list[dict[str]]):
         elif reason == DiffResult.NAME_CHANGED:
             changes_request_payload['title'] += f'Het {ste_of_de(after_vak.begin_hour)} uur is veranderd naar {after_vak.subject_name}'
             changes_request_payload['message'] = f"Eerder was het {before_vak.subject_name}"
-        log("DEBUG-161", str(changes_request_payload))
 
         response = requests.post(NTFY_ENDPOINT, data=dumps(changes_request_payload))
         if response.status_code == 200:
@@ -185,9 +184,18 @@ def handle_rooster_changes(diff: list[dict[str]]):
 # ------------ HELPER FUNCTIONS ------------
     
 def main() -> None:
+    requests.post(NTFY_ENDPOINT,
+                            data=dumps(
+                                {
+                                    'topic': NTFY_TOPIC_NAME,
+                                    'title': 'Startup',
+                                    'message': 'Notifier started.',
+                                    'priority': 3,
+                                }
+                            ))
+    student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
     global buffer_current_rooster
     while True:
-        student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
 
         now = datetime.now(CET)
         if now.weekday() in weekends:
@@ -223,7 +231,9 @@ def main() -> None:
         try:
             rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
         except Exception:
-            main()
+            student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
+            log("INFO", "Student has been refreshed.")
+            continue
         
         # rooster: [Subject, Subject, ...]
 
