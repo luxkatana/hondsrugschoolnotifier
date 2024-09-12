@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from threading import Thread
-from socket import socket
+import socket
 import pytz
 import requests
 import somtodaypython.nonasyncsomtoday as somtoday
@@ -16,7 +16,8 @@ from os import getenv
 
 def webserver() -> None:
     log(message='Webserver daemon has started on 0.0.0.0:8000')
-    server = socket()
+    server = socket.socket()
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(('0.0.0.0', 8000))
     server.listen(5)
     while True:
