@@ -1,17 +1,16 @@
 #!/usr/bin/python3
 from threading import Thread
-import socket
-import pytz
-import requests
-import somtodaypython.nonasyncsomtoday as somtoday
 from datetime import datetime, timedelta 
-from enum import Enum
 from json import dumps
 from typing import NamedTuple, Union
 from time import sleep as wait
 from dotenv import load_dotenv
 from sys import stderr
 from os import getenv
+import socket
+import pytz
+import requests
+import somtodaypython.nonasyncsomtoday as somtoday
 
 
 def webserver() -> None:
@@ -50,15 +49,11 @@ class Extra(NamedTuple):
     description: str
     to_notify_before_min: int
 
-class DiffResult(Enum):
-    NAME_CHANGED = 0
-    CLASS_DISMISSED = 1
-    TEACHER_CHANGED = 2
-    CLASS_ADDED = 3
+
 CET = pytz.timezone("Europe/Amsterdam")
 # CET = pytz.FixedOffset(60)
 NTFY_ENDPOINT: str = 'https://ntfy.sh'
-school = somtoday.find_school("Hondsrug College")
+SCHOOL: somtoday.School = somtoday.find_school("Hondsrug College")
 buffer_current_rooster: list[somtoday.Subject] = []
 ste_of_de = lambda n: f"{n}ste" if n in (1, 8) else f'{n}de' # noqa
 weekends = {5, 6} # saturday and sunday (index offset by 1)
@@ -118,60 +113,41 @@ def fill_rooster_extras(rooster: list[somtoday.Subject]) -> list[somtoday.Subjec
 
             
 
-def find_differences(before: list[Union[somtoday.Subject, Extra]], after: list[Union[somtoday.Subject, Extra]]) -> list[dict[str]]:
-    diff: list[dict[str]] = []
+def find_differences(before: list[somtoday.Subject], after: list[somtoday.Subject]) -> list[tuple[str, somtoday.Subject, somtoday.Subject]]:
+    reutrn_val = []
     for before_vak, after_vak in zip(before, after):
-        payload = {
-            'before_vak': before_vak,
-            'after_vak': after_vak,
-            'reason': -1
-        }
-        if True in (isinstance(before_vak, Extra), isinstance(after_vak, Extra)):
-            NotImplemented # NOTE: implement this in the future :D
+        if isinstance(before_vak, Extra) or isinstance(after_vak, Extra):
             continue
-        before_vak: somtoday.Subject
-        after_vak: somtoday.Subject
-        if before_vak.subject_name != after_vak.subject_name and after_vak.subject_name == 'Unknown':
-            payload['reason'] = DiffResult.CLASS_DISMISSED
-            log("DEBUG", "Class dismissed")
-            diff.append(payload)
-        elif before_vak.teacher_short != after_vak.teacher_short:
-            log("DEBUG", "Teacher changed")
-            payload['reason'] = DiffResult.TEACHER_CHANGED
-            diff.append(payload)
-        elif before_vak.subject_name != after_vak.subject_name and before_vak.subject_name == 'Unknown':
-            log("DEBUG", "Class added")
-            payload['reason'] = DiffResult.CLASS_ADDED
-            diff.append(payload)
-        elif before_vak.subject_name != after_vak.subject_name and 'Unknown' not in [before_vak.subject_name, after_vak.subject_name]:
-            payload['reason'] = DiffResult.NAME_CHANGED
-            log("DEBUG", "Name changed")
-            diff.append(payload)
 
-                
-    
-    return diff
+        if before_vak.__dict__ != after_vak.__dict__:
+            for key in before_vak.__dict__:
+                if before_vak.__dict__[key] != after_vak.__dict__[key]:
+                    reutrn_val.append((key, before_vak, after_vak))
+                    break
 
-def handle_rooster_changes(diff: list[dict[str]]):
+    return reutrn_val
+
+def handle_rooster_changes(diff: list[tuple[str, somtoday.Subject, somtoday.Subject]]):
     for wijziging in diff:
         changes_request_payload = {
             'topic': NTFY_TOPIC_NAME,
             'title': '[ROOSTERWIJZIGING] ',
             'message': '',
-            'priority': 2,
+            'priority': 3,
         }
-        before_vak: somtoday.Subject = wijziging['before_vak']
-        after_vak: somtoday.Subject = wijziging['after_vak']
-        reason = wijziging['reason']
-        if reason == DiffResult.CLASS_ADDED:
-            changes_request_payload['title'] += f'Een vrije uur is veranderd naar {after_vak.subject_name}'
-            changes_request_payload['message'] = f'Om {after_vak.begin_time.strftime("%H:%M")} heb je {after_vak.subject_name}'
-        elif reason == DiffResult.TEACHER_CHANGED:
-            changes_request_payload['title'] += f'Leraar voor {after_vak.subject_name} is veranderd'
-            changes_request_payload['message'] = f'Eerder was het {before_vak.teacher_short}, nu {after_vak.teacher_short}'
-        elif reason == DiffResult.NAME_CHANGED:
-            changes_request_payload['title'] += f'Het {ste_of_de(after_vak.begin_hour)} uur is veranderd naar {after_vak.subject_name}'
-            changes_request_payload['message'] = f"Eerder was het {before_vak.subject_name}"
+        attr, before_vak, after_vak = wijziging
+        match attr:
+            case 'subject_name':
+                changes_request_payload['title'] += f'Het {ste_of_de(after_vak.begin_hour)} uur is veranderd naar {after_vak.subject_name}'
+                changes_request_payload['message'] = f"Eerder was het {before_vak.subject_name}"
+            case 'teacher_short':
+                changes_request_payload['title'] += f'Leraar voor {after_vak.subject_name} is veranderd'
+                changes_request_payload['message'] = f'Eerder was het {before_vak.teacher_short}, nu {after_vak.teacher_short}'
+            case 'location':
+                changes_request_payload['title'] += f'{ste_of_de(after_vak.begin_hour)} uur {after_vak.subject_name} locatie is veranderd naar {after_vak.location}'
+                changes_request_payload['message'] = f'Eerder was het {before_vak.location}'
+            case _:
+                log('INFO', f'Unknown attribute: {attr}')
 
         response = requests.post(NTFY_ENDPOINT, data=dumps(changes_request_payload))
         if response.status_code == 200:
@@ -193,7 +169,7 @@ def main() -> None:
                                     'priority': 3,
                                 }
                             ))
-    student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
+    student = SCHOOL.get_student(STUDENT_NAME, STUDENT_PASSWORD)
     global buffer_current_rooster
     while True:
 
@@ -218,61 +194,21 @@ def main() -> None:
             wait(duration)
             log('INFO', 'hey I\'m back!')
             continue
-        # if (now.weekday() in weekends) or (now.hour < 8) or (now.hour >= 16):
-        #     '''
-        #     (now.weekday() in weekends) => check if now is saturday or sunday
-        #     (now.hour < 8) => check if the time is before 8:00 AM (no lessons at my school)
-        #     (now.hour >= 16) => check if the time is later than 4:00 PM (class finished)
-        #     '''
-        #     log('INFO', 'CYCLE SKIPPED')
-        #     continue
             
         
         try:
             rooster: list[somtoday.Subject] = student.fetch_schedule(now, now + timedelta(days=1))
         except Exception:
-            student = school.get_student(STUDENT_NAME, STUDENT_PASSWORD)
+            student = SCHOOL.get_student(STUDENT_NAME, STUDENT_PASSWORD)
             log("INFO", "Student has been refreshed.")
             continue
         
         # rooster: [Subject, Subject, ...]
 
-        # 今天 = { 
-        #     'year': 2024,
-        #     'month': 1,
-        #     'day': 23,
-        #     'tzinfo': CET
-        # }
-        # match (input('>>')):
-        #     case 'anything':
-        #         rooster  = [
-        #             somtoday.Subject(subject='Wiskunde', begindt=datetime(**今天, hour=9, minute=15), enddt=datetime(**今天, hour=10, minute=0), beginhour=1, endhour=2),
-        #             somtoday.Subject(subject='Aardrijkskunde', begindt=datetime(**今天, hour=10, minute=0), enddt=datetime(**今天, hour=10, minute=45), beginhour=2, endhour=3),
-        #             somtoday.Subject(subject='Engels', begindt=datetime(**今天, hour=10, minute=45), enddt=datetime(**今天, hour=11, minute=30), beginhour=3, endhour=4),
-        #             somtoday.Subject(subject='Maatschapijleer', begindt=datetime(**今天, hour=11, minute=45), enddt=datetime(**今天, hour=12, minute=30), beginhour=4, endhour=5),
-        #         ]
-        #     case _:
-        #         rooster  = [
-        #             somtoday.Subject(subject='Wiskunde', begindt=datetime(**今天, hour=9, minute=15), enddt=datetime(**今天, hour=10, minute=0), beginhour=1, endhour=2),
-        #             somtoday.Subject(subject='Aardrijkskunde', begindt=datetime(**今天, hour=10, minute=0), enddt=datetime(**今天, hour=10, minute=45), beginhour=2, endhour=3),
-        #             somtoday.Subject(subject='Engels', begindt=datetime(**今天, hour=10, minute=45), enddt=datetime(**今天, hour=11, minute=30), beginhour=3, endhour=4),
-                    
-        #         ]
-                
-                
 
         filled = fill_rooster_extras(rooster)
         nearest_subject_now = get_nearest_time(filled, now)
-        # nearest_subject_now  = get_nearest_time(rooster, now)
-        # for i in filled:
-        #     if isinstance(i, somtoday.Subject):
-        #         i: somtoday.Subject
-        #         print(f'{i} \t {i.begin_time.strftime("%H:%M")} -> {i.end_time.strftime("%H:%M")}')
-        #     else:
-        #         i: Extra
-        #         print(f'{i} \t {i.starting_hour}:{i.starting_minute} -> {i.ending_hour}:{i.ending_minute}')
-        # diff = find_differences(buffer_current_rooster, filled)
-        # handle_rooster_changes(diff)
+        handle_rooster_changes(find_differences(buffer_current_rooster, filled))
 
         if nearest_subject_now != ():
             vak = nearest_subject_now[0]
