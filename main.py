@@ -234,6 +234,7 @@ def main() -> None:
                 vak: somtoday.Subject
                 if vak.subject_name == 'Unknown':
                     continue
+                buffer_current_rooster = filled
                 response = requests.post(NTFY_ENDPOINT,
                         data=dumps({
                             'topic': NTFY_TOPIC_NAME,
