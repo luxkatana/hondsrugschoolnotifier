@@ -1,4 +1,4 @@
 pytz
 requests
 python-dotenv
-git+https://github.com/luxkatana/somtodayapi_python@dev
+git+https://github.com/luxkatana/somtodayapi_python@main

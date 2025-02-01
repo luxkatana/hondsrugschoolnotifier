@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from threading import Thread
 from datetime import datetime, timedelta 
 from json import dumps
 from typing import NamedTuple, Union
@@ -7,22 +6,9 @@ from time import sleep as wait
 from dotenv import load_dotenv
 from sys import stderr
 from os import getenv
-import socket
 import pytz
 import requests
 import somtodaypython.nonasyncsomtoday as somtoday
-
-
-def webserver() -> None:
-    log(message='Webserver daemon has started on 0.0.0.0:8000')
-    server = socket.socket()
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(('0.0.0.0', 8000))
-    server.listen(5)
-    while True:
-        client, _ = server.accept()
-        client.close()
-    
 
 # ------------ CONFIGURATIONS ------------
 
@@ -255,9 +241,7 @@ def main() -> None:
         wait(60)
 
 if __name__ == '__main__':
-    Thread(target=webserver, daemon=True).start()
     log('INFO', "Notifier started")
-
     try:
         main() # starting the loop 
     except KeyboardInterrupt: ...
