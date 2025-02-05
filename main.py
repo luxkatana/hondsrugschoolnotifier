@@ -102,7 +102,8 @@ def fill_rooster_extras(rooster: list[somtoday.Subject]) -> list[somtoday.Subjec
 def find_differences(before: list[somtoday.Subject], after: list[somtoday.Subject]) -> list[tuple[str, somtoday.Subject, somtoday.Subject]]:
     reutrn_val = []
     for before_vak, after_vak in zip(before, after):
-        if isinstance(before_vak, Extra) or isinstance(after_vak, Extra):
+        current_time = datetime.now(tz=CET)
+        if (isinstance(before_vak, Extra) or isinstance(after_vak, Extra)) or (before_vak.begin_time.strftime("%d/%m/%Y") != current_time.strftime("%d/%m/%Y")):
             continue
 
         if before_vak.__dict__ != after_vak.__dict__:
